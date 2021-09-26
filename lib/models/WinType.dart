@@ -1,0 +1,5 @@
+enum WinType {
+  CHECKMATE,
+  RESIGNATION,
+  TIMEOUT,
+}
