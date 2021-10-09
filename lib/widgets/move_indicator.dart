@@ -5,7 +5,7 @@ class MoveIndicator extends StatelessWidget {
   final int alpha;
   final double sizeFactor;
 
-  MoveIndicator({this.color, this.sizeFactor = 0.7, this.alpha = 100});
+  MoveIndicator({required this.color, this.sizeFactor = 0.7, this.alpha = 100});
 
   @override
   Widget build(BuildContext context) {

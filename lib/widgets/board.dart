@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:chess/chess.dart' as chess;
 import 'package:chess_app/controllers/board_controller.dart';
 import 'package:chess_app/widgets/dialogs/pawn_promotion.dart';
@@ -19,11 +20,11 @@ const SQUARES = [
 class Board extends StatefulWidget {
   final BoardController controller;
   final bool flipped;
-  final SquareColorTheme squareColors;
+  final SquareColorTheme? squareColors;
 
   Board({
-    @required this.controller,
-    SquareColorTheme squareColors,
+    required this.controller,
+    SquareColorTheme? squareColors,
     this.flipped = false,
   }) : this.squareColors = squareColors ?? SquareColorTheme.lichess;
 
@@ -32,7 +33,7 @@ class Board extends StatefulWidget {
 }
 
 class _BoardState extends State<Board> {
-  String selectedSquare;
+  String? selectedSquare;
 
   bool get flipped => widget.flipped;
   BoardController get controller => widget.controller;
@@ -76,30 +77,32 @@ class _BoardState extends State<Board> {
   }
 
   bool _canAcceptMove(Square from, Square to) {
-    if (from == null || to == null) return false;
     return controller
         .getMovesForSquare(from.name)
         .any((m) => m.toAlgebraic == to.name);
   }
 
-  void _attemptMove(String from, String target) async {
+  void _attemptMove(String? from, String target) async {
+    if (selectedSquare == null) {
+      return;
+    }
+
     // Generate list of possible moves from selectedSquare
-    final moves = controller.getMovesForSquare(selectedSquare);
+    final moves = controller.getMovesForSquare(selectedSquare!);
 
     // Get the move that matches our selected squares
-    final move = moves.firstWhere(
+    final move = moves.firstWhereOrNull(
       (m) => m.fromAlgebraic == selectedSquare && m.toAlgebraic == target,
-      orElse: () => null,
     );
 
     // No move?? This shouldn't be possible logically, but check just in case
     if (move == null) return updateSelectedSquare(null);
 
-    chess.PieceType promotionType;
+    chess.PieceType? promotionType;
 
     // Are we promoting?
     if (move.promotion != null) {
-      chess.PieceType type = await showDialog<chess.PieceType>(
+      chess.PieceType? type = await showDialog<chess.PieceType>(
         context: context,
         builder: (_) => PawnPromotionDialog(move.color),
       );
@@ -112,7 +115,7 @@ class _BoardState extends State<Board> {
 
     // Move the piece
     controller.move(
-      selectedSquare,
+      selectedSquare!,
       target,
       promotion: promotionType,
     );
@@ -131,7 +134,7 @@ class _BoardState extends State<Board> {
         physics: NeverScrollableScrollPhysics(),
         children: List.from(
           _iterateSquares(flipped: flipped).map<Square>((name) {
-            final chess.Piece piece = controller.getPiece(name);
+            final chess.Piece? piece = controller.getPiece(name);
 
             final bool isLight = controller.squareIsLight(name);
             final bool isSelected = name == selectedSquare;
@@ -141,7 +144,7 @@ class _BoardState extends State<Board> {
             return Square(
               name: name,
               isLight: isLight,
-              colors: widget.squareColors,
+              colors: widget.squareColors!,
               piece: piece,
               onTap: _onSquareTapped,
               onDragStarted: _onSquareDragStart,
@@ -186,13 +189,13 @@ typedef void SquareMoveCallback(Square from, Square to);
 class SquareColorTheme {
   final Color light;
   final Color dark;
-  final Color selectedHighlight;
-  final Color checkHighlight;
-  final Color previousMoveHighlight;
+  final Color? selectedHighlight;
+  final Color? checkHighlight;
+  final Color? previousMoveHighlight;
 
   SquareColorTheme({
-    @required this.light,
-    @required this.dark,
+    required this.light,
+    required this.dark,
     this.selectedHighlight,
     this.checkHighlight,
     this.previousMoveHighlight,
@@ -200,7 +203,7 @@ class SquareColorTheme {
 
   static final SquareColorTheme defaultTheme = SquareColorTheme(
     light: Colors.grey,
-    dark: Colors.grey[700],
+    dark: Colors.grey[700]!,
   );
 
   static final SquareColorTheme chesscom = SquareColorTheme(
@@ -228,19 +231,19 @@ class Square extends StatelessWidget {
   final bool isPreviousMove;
   final bool showRank;
   final bool showFile;
-  final chess.Piece piece;
-  final SquareCallback onTap;
-  final SquareCallback onDragStarted;
-  final SquareMoveCallback onDragAccept;
-  final SquareDragMoveCallback canAcceptDragMove;
+  final chess.Piece? piece;
+  final SquareCallback? onTap;
+  final SquareCallback? onDragStarted;
+  final SquareMoveCallback? onDragAccept;
+  final SquareDragMoveCallback? canAcceptDragMove;
 
   String get rank => name[0];
   String get file => name[1];
 
   Square({
-    this.name,
-    this.isLight,
-    this.colors,
+    required this.name,
+    required this.isLight,
+    required this.colors,
     this.piece,
     this.onTap,
     this.onDragStarted,
@@ -255,9 +258,9 @@ class Square extends StatelessWidget {
   });
 
   Color getOverlayColor() {
-    if (isPreviousMove) return Colors.orange.withAlpha(170);
-    if (isSelected) return Colors.green.withAlpha(170);
-    if (isChecked) return Colors.red.withAlpha(170);
+    if (isPreviousMove) return Colors.amber[400]!.withAlpha(170);
+    if (isSelected) return Colors.green[400]!.withAlpha(170);
+    if (isChecked) return Colors.red[400]!.withAlpha(170);
     return Colors.transparent;
   }
 
@@ -276,15 +279,15 @@ class Square extends StatelessWidget {
                     data: this,
                     child: Padding(
                       padding: EdgeInsets.all(8),
-                      child: PieceImage(piece),
+                      child: PieceImage(piece!),
                     ),
                     feedback: SizedBox(
-                      child: PieceImage(piece),
+                      child: PieceImage(piece!),
                       width: constraints.maxWidth,
                       height: constraints.maxHeight,
                     ),
                     childWhenDragging: Container(),
-                    onDragStarted: () => onDragStarted(this),
+                    onDragStarted: () => onDragStarted?.call(this),
                   ),
                 ),
               if (isPossibleMove)
@@ -319,11 +322,11 @@ class Square extends StatelessWidget {
                 ),
             ],
           ),
-          onTap: () => onTap(this),
+          onTap: () => onTap?.call(this),
         ),
       ),
-      onWillAccept: (square) => canAcceptDragMove(square, this),
-      onAccept: (square) => onDragAccept(square, this),
+      onWillAccept: (square) => canAcceptDragMove?.call(square!, this) ?? false,
+      onAccept: (square) => onDragAccept?.call(square, this),
     );
   }
 }

@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 class PlayerClock extends StatelessWidget {
   final String playerName;
   final ClockController clockController;
-  final Iterable<chess.Piece> pieces;
+  final Iterable<chess.Piece>? pieces;
 
   PlayerClock(this.playerName, this.clockController, {this.pieces});
 
@@ -22,11 +22,14 @@ class PlayerClock extends StatelessWidget {
             playerName,
             style: TextStyle(fontWeight: FontWeight.w500),
           ),
-          if (pieces != null && pieces.isNotEmpty)
-            Row(
-              children: pieces
-                  ?.map<PieceImage>((p) => PieceImage(p, size: 15))
-                  ?.toList(),
+          if (pieces != null && (pieces?.isNotEmpty ?? false))
+            Padding(
+              padding: const EdgeInsets.only(left: 8.0),
+              child: Row(
+                children: pieces!
+                    .map<PieceImage>((p) => PieceImage(p, size: 15))
+                    .toList(),
+              ),
             ),
           Spacer(),
           Clock(controller: clockController),

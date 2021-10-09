@@ -4,7 +4,7 @@ class MoveNavigator extends StatelessWidget {
   final Function onMoveForward;
   final Function onMoveBackward;
 
-  MoveNavigator({this.onMoveBackward, this.onMoveForward});
+  MoveNavigator({required this.onMoveBackward, required this.onMoveForward});
 
   @override
   Widget build(BuildContext context) {

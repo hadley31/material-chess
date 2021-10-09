@@ -6,5 +6,7 @@ extension ChessColorExtensions on Color {
 }
 
 extension ChessMoveExtensions on Move {
-  Piece get capturedPiece => Piece(captured, color.other);
+  Piece? get capturedPiece {
+    return captured == null ? Piece(captured!, color.other) : null;
+  }
 }

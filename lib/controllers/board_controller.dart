@@ -1,16 +1,17 @@
 import 'dart:collection';
 
 import 'package:chess/chess.dart' as chess;
+import 'package:chess_app/models/DrawType.dart';
 import 'package:chess_app/models/WinType.dart';
 import 'package:flutter/material.dart';
 import 'package:chess_app/extensions/chess.dart';
 
 typedef void WinCallback(WinType type, chess.Color color);
 typedef void MoveCallback(chess.Move move);
-typedef void DrawCallback();
+typedef void DrawCallback(DrawType type);
 
 class BoardController extends ChangeNotifier {
-  chess.Chess game;
+  final chess.Chess game;
   final WinCallback onWin;
   final MoveCallback onMove;
   final DrawCallback onDraw;
@@ -23,18 +24,18 @@ class BoardController extends ChangeNotifier {
   final Queue<chess.Move> _undoneMoves = Queue<chess.Move>(); // Used as stack
 
   BoardController({
-    @required this.onMove,
-    @required this.onDraw,
-    @required this.onWin,
-    this.game,
-  }) {
-    this.game ??= chess.Chess();
-  }
+    required this.onMove,
+    required this.onDraw,
+    required this.onWin,
+    required this.game,
+  });
 
-  List<chess.PieceType> get whiteCaptures => _capturedPieces[chess.Color.WHITE];
-  List<chess.PieceType> get blackCaptures => _capturedPieces[chess.Color.BLACK];
+  List<chess.PieceType> get whiteCapturedPieces =>
+      _capturedPieces[chess.Color.WHITE]!;
+  List<chess.PieceType> get blackCapturedPieces =>
+      _capturedPieces[chess.Color.BLACK]!;
 
-  bool move(String from, String to, {chess.PieceType promotion}) {
+  bool move(String from, String to, {chess.PieceType? promotion}) {
     if (_undoneMoves.isNotEmpty) {
       _undoneMoves.clear();
     }
@@ -46,17 +47,25 @@ class BoardController extends ChangeNotifier {
     });
 
     if (result) {
-      final move = lastMove;
+      final move = lastMove!;
       this.notifyListeners();
       this.onMove(move);
       if (move.captured != null) {
-        _capturedPieces[lastMove.color].add(move.captured);
+        _capturedPieces[lastMove?.color]?.add(move.captured!);
       }
     }
 
-    if (game.in_checkmate)
-      this.onWin(WinType.CHECKMATE, winner);
-    else if (game.in_draw) this.onDraw();
+    if (game.in_checkmate) {
+      this.onWin(WinType.CHECKMATE, winner!);
+    } else if (game.in_draw) {
+      if (game.in_threefold_repetition) {
+        this.onDraw(DrawType.THREEFOLD_REPETITION);
+      } else if (game.in_stalemate) {
+        this.onDraw(DrawType.STALEMATE);
+      } else if (game.insufficient_material) {
+        this.onDraw(DrawType.INSUFFICIENT_MATERIAL);
+      }
+    }
 
     return result;
   }
@@ -66,16 +75,17 @@ class BoardController extends ChangeNotifier {
     if (move != null) {
       this.notifyListeners();
       if (lastMove != null) {
-        this.onMove(lastMove);
+        this.onMove(lastMove!);
       }
 
       final ugly = _makeUgly(move);
 
-      if (ugly.captured != null && _capturedPieces[ugly.color].isNotEmpty) {
-        _capturedPieces[ugly.color].removeLast();
+      if (ugly?.captured != null &&
+          (_capturedPieces[ugly!.color]?.isNotEmpty ?? false)) {
+        _capturedPieces[ugly.color]?.removeLast();
       }
 
-      _undoneMoves.add(ugly);
+      _undoneMoves.add(ugly!);
     }
   }
 
@@ -92,8 +102,8 @@ class BoardController extends ChangeNotifier {
     this.notifyListeners();
   }
 
-  chess.Color get winner {
-    if (game.in_checkmate) {
+  chess.Color? get winner {
+    if (game != null && game.in_checkmate) {
       final bool whiteWins = game.king_attacked(chess.Color.BLACK);
 
       return whiteWins ? chess.Color.WHITE : chess.Color.BLACK;
@@ -101,7 +111,7 @@ class BoardController extends ChangeNotifier {
     return null;
   }
 
-  chess.Move get lastMove {
+  chess.Move? get lastMove {
     return game.history.length > 0 ? game.history.last.move : null;
   }
 
@@ -109,7 +119,7 @@ class BoardController extends ChangeNotifier {
     return game.turn;
   }
 
-  List<chess.Move> getMovesForSquare(String square) {
+  List<chess.Move> getMovesForSquare(String? square) {
     return game.generate_moves({'square': square});
   }
 
@@ -117,15 +127,15 @@ class BoardController extends ChangeNotifier {
     return game.square_color(square) == 'light';
   }
 
-  chess.Piece getPiece(String square) {
+  chess.Piece? getPiece(String square) {
     return game.get(square);
   }
 
   List<chess.PieceType> getCapturedPieces(chess.Color color) {
-    return _capturedPieces[color];
+    return _capturedPieces[color]!;
   }
 
-  chess.Move _makeUgly(move) {
+  chess.Move? _makeUgly(move) {
     if (move is chess.Move) {
       return move;
     }
@@ -138,7 +148,7 @@ class BoardController extends ChangeNotifier {
         if (move['from'] == moves[i].fromAlgebraic &&
             move['to'] == moves[i].toAlgebraic &&
             (moves[i].promotion == null ||
-                move['promotion'] == moves[i].promotion.name)) {
+                move['promotion'] == moves[i].promotion?.name)) {
           return moves[i];
         }
       }

@@ -4,11 +4,9 @@ import 'package:chess_app/extensions/piece.dart';
 
 class PieceImage extends StatelessWidget {
   final Piece piece;
-  final double size;
+  final double? size;
 
-  PieceImage(this.piece, {this.size}) {
-    assert(this.piece != null);
-  }
+  PieceImage(this.piece, {this.size});
 
   @override
   Widget build(BuildContext context) {

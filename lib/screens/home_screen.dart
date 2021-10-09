@@ -1,4 +1,4 @@
-import 'package:chess_app/screens/play.dart';
+import 'package:chess_app/screens/play_sceen.dart';
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -11,7 +11,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Welcome!'),
+        title: Text('Material Chess'),
       ),
       body: Center(
         child: Column(

@@ -12,16 +12,17 @@ class ClockController extends ValueNotifier<double> {
   double increment;
   double delay;
 
-  final ClockFinishedCallback onFinished;
+  final ClockFinishedCallback? onFinished;
 
-  Timer _timer;
+  Timer? _timer;
   bool _isFinished = false;
   bool _isRunning = false;
 
   bool get isRunning => _isRunning;
+  bool get isFinished => _isFinished;
 
   ClockController({
-    @required this.seconds,
+    required this.seconds,
     this.increment = 0,
     this.delay = 0,
     this.onFinished,
@@ -43,7 +44,7 @@ class ClockController extends ValueNotifier<double> {
     }
   }
 
-  void stop([bool reset = false, bool doIncrement = true]) {
+  void stop({bool reset = false, bool doIncrement = true}) {
     if (reset) this.reset();
     if (_isFinished) return;
     if (!_isRunning) return;
@@ -80,7 +81,8 @@ class ClockController extends ValueNotifier<double> {
 
     if (value == 0) {
       _isFinished = true;
-      onFinished();
+      _isRunning = false;
+      onFinished?.call();
       t.cancel();
     }
   }
@@ -89,6 +91,11 @@ class ClockController extends ValueNotifier<double> {
   void dispose() {
     super.dispose();
     _timer?.cancel();
+  }
+
+  @override
+  String toString() {
+    return "Clock";
   }
 }
 

@@ -1,7 +1,9 @@
 import 'package:chess_app/controllers/board_controller.dart';
 import 'package:chess_app/controllers/clock_controller.dart';
+import 'package:chess_app/models/DrawType.dart';
 import 'package:chess_app/models/WinType.dart';
-import 'package:chess_app/screens/play_settings.dart';
+import 'package:chess_app/screens/play_settings_screen.dart';
+import 'package:chess_app/util/UserSettings.dart';
 import 'package:chess_app/widgets/board.dart';
 import 'package:chess_app/widgets/player_clock.dart';
 import 'package:flutter/material.dart';
@@ -15,9 +17,9 @@ class PlayScreen extends StatefulWidget {
 }
 
 class _PlayScreenState extends State<PlayScreen> {
-  BoardController _boardController;
-  Map<chess.Color, ClockController> _clockControllerMap;
-  Map<chess.Color, String> _nameMap;
+  BoardController? _boardController;
+  Map<chess.Color, ClockController>? _clockControllerMap;
+  Map<chess.Color, String>? _nameMap;
 
   bool flipped = false;
 
@@ -29,13 +31,13 @@ class _PlayScreenState extends State<PlayScreen> {
       onDraw: onDrawCallback,
       onMove: onMoveCallback,
       onWin: onWinCallback,
-      game: null,
+      game: chess.Chess(),
     );
 
     _clockControllerMap = {
       chess.Color.WHITE: ClockController(
         seconds: 180.0,
-        delay: 0.0,
+        delay: 3.0,
         increment: 2.0,
         onFinished: () => onWinCallback(WinType.TIMEOUT, chess.Color.BLACK),
       ),
@@ -57,14 +59,14 @@ class _PlayScreenState extends State<PlayScreen> {
   Widget build(BuildContext context) {
     final bottomColor = _getBottomColor();
     final topColor = bottomColor.other;
-    final ClockController topClock = _clockControllerMap[topColor];
-    final ClockController bottomClock = _clockControllerMap[bottomColor];
+    final ClockController topClock = _clockControllerMap![topColor]!;
+    final ClockController bottomClock = _clockControllerMap![bottomColor]!;
 
-    final String topName = _nameMap[topColor];
-    final String bottomName = _nameMap[bottomColor];
+    final String topName = _nameMap![topColor]!;
+    final String bottomName = _nameMap![bottomColor]!;
 
-    final topCaptures = _boardController.getCapturedPieces(topColor);
-    final bottomCaptures = _boardController.getCapturedPieces(bottomColor);
+    final topCaptures = _boardController!.getCapturedPieces(topColor);
+    final bottomCaptures = _boardController!.getCapturedPieces(bottomColor);
 
     return Scaffold(
       appBar: AppBar(
@@ -73,13 +75,27 @@ class _PlayScreenState extends State<PlayScreen> {
           IconButton(
             icon: Icon(Icons.settings_rounded),
             onPressed: () async {
-              _clockControllerMap.values
-                  .forEach((clock) => clock.stop(false, false));
+              // TODO: We won't want to pause clock for network game
+              // Store current clock states
+              final clockStates = _clockControllerMap!.map(
+                (key, value) => MapEntry(key, value.isRunning),
+              );
+
+              // Stop all clocks
+              _clockControllerMap!.values.forEach(
+                (clock) => clock.stop(doIncrement: false),
+              );
+
+              // Open Settings Menu
               await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => PlaySettings()),
               );
-              setActiveClock(_boardController.turn);
+
+              // Restore clock states
+              _clockControllerMap!.forEach(
+                (key, clock) => clock.setRunning(clockStates[key]!),
+              );
             },
           )
         ],
@@ -101,7 +117,7 @@ class _PlayScreenState extends State<PlayScreen> {
                         leading: new Icon(Icons.flag_rounded),
                         title: new Text('Resign'),
                         onTap: () {
-                          _boardController.undoMove();
+                          _boardController?.undoMove();
                           Navigator.pop(context);
                         },
                       ),
@@ -109,7 +125,7 @@ class _PlayScreenState extends State<PlayScreen> {
                         leading: new Icon(FontAwesomeIcons.handshake, size: 20),
                         title: new Text('Offer Draw'),
                         onTap: () {
-                          _boardController.undoMove();
+                          _boardController?.undoMove();
                           Navigator.pop(context);
                         },
                       ),
@@ -117,7 +133,7 @@ class _PlayScreenState extends State<PlayScreen> {
                         leading: new Icon(Icons.undo),
                         title: new Text('Undo Move'),
                         onTap: () {
-                          _boardController.undoMove();
+                          _boardController?.undoMove();
                           Navigator.pop(context);
                         },
                       ),
@@ -148,11 +164,11 @@ class _PlayScreenState extends State<PlayScreen> {
             ),
             IconButton(
               icon: Icon(Icons.arrow_back_rounded),
-              onPressed: () => _boardController.undoMove(),
+              onPressed: () => _boardController?.undoMove(),
             ),
             IconButton(
               icon: Icon(Icons.arrow_forward_rounded),
-              onPressed: () => _boardController.redoMove(),
+              onPressed: () => _boardController?.redoMove(),
             ),
           ],
         ),
@@ -169,8 +185,9 @@ class _PlayScreenState extends State<PlayScreen> {
                       .map<chess.Piece>((p) => chess.Piece(p, bottomColor)),
                 ),
                 Board(
-                  controller: _boardController,
+                  controller: _boardController!,
                   flipped: flipped,
+                  squareColors: SquareColorTheme.lichess,
                 ),
                 PlayerClock(
                   bottomName,
@@ -186,19 +203,18 @@ class _PlayScreenState extends State<PlayScreen> {
     );
   }
 
-  void onMoveCallback(chess.Move move) {
+  void onMoveCallback(chess.Move move) async {
     print('${move.fromAlgebraic} -> ${move.toAlgebraic}');
     setActiveClock(move.color.other);
 
     setState(() {});
 
-    // TODO: Add setting for Pass and Play to flip every move
-    if (true) {
-      // _setBottomColor(move.color.other);
+    if (await UserSettings.flipBoardEachTurn) {
+      _setBottomColor(move.color.other);
     }
   }
 
-  void onDrawCallback() {
+  void onDrawCallback(DrawType type) {
     print('Draw.');
     showDialog(
       context: context,
@@ -262,7 +278,7 @@ class _PlayScreenState extends State<PlayScreen> {
   }
 
   void setActiveClock(chess.Color color) {
-    _clockControllerMap.forEach((c, clock) => clock.setRunning(c == color));
+    _clockControllerMap?.forEach((c, clock) => clock.setRunning(c == color));
   }
 
   chess.Color _getBottomColor() {
@@ -282,8 +298,10 @@ class _PlayScreenState extends State<PlayScreen> {
   }
 
   void resetBoard() {
-    _boardController.reset();
-    _clockControllerMap.values.forEach((clock) => clock.stop(true, false));
+    _boardController?.reset();
+    _clockControllerMap?.values.forEach(
+      (clock) => clock.stop(reset: true, doIncrement: false),
+    );
 
     setState(() {
       // TODO: Add setting if playing as black, make true
@@ -294,7 +312,7 @@ class _PlayScreenState extends State<PlayScreen> {
   @override
   void dispose() {
     super.dispose();
-    _boardController.dispose();
-    _clockControllerMap.values.forEach((clock) => clock.dispose());
+    _boardController?.dispose();
+    _clockControllerMap?.values.forEach((clock) => clock.dispose());
   }
 }
