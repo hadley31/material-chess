@@ -4,6 +4,7 @@ import 'package:chess_app/controllers/board_controller.dart';
 import 'package:chess_app/widgets/dialogs/pawn_promotion.dart';
 import 'package:chess_app/widgets/move_indicator.dart';
 import 'package:chess_app/widgets/piece_image.dart';
+import 'package:chess_app/extensions/chess.dart';
 import 'package:flutter/material.dart';
 
 const SQUARES = [
@@ -21,10 +22,12 @@ class Board extends StatefulWidget {
   final BoardController controller;
   final bool flipped;
   final SquareColorTheme? squareColors;
+  final ColorFlags colorsAllowedToMove;
 
   Board({
     required this.controller,
     SquareColorTheme? squareColors,
+    this.colorsAllowedToMove = ColorFlagsExtensions.none,
     this.flipped = false,
   }) : this.squareColors = squareColors ?? SquareColorTheme.lichess;
 
@@ -84,6 +87,11 @@ class _BoardState extends State<Board> {
 
   void _attemptMove(String? from, String target) async {
     if (selectedSquare == null) {
+      return;
+    }
+
+    if (!widget.colorsAllowedToMove.contains(controller.turn)) {
+      print("Color not allowed to move!");
       return;
     }
 

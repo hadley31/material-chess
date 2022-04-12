@@ -188,6 +188,7 @@ class _PlayScreenState extends State<PlayScreen> {
                   controller: _boardController!,
                   flipped: flipped,
                   squareColors: SquareColorTheme.lichess,
+                  colorsAllowedToMove: chess.Color.BLACK | chess.Color.WHITE,
                 ),
                 PlayerClock(
                   bottomName,

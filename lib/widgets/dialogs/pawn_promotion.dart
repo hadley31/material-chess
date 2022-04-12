@@ -1,7 +1,7 @@
 import 'package:chess_app/widgets/piece_image.dart';
 import 'package:flutter/material.dart';
 import 'package:chess/chess.dart' as chess;
-import 'package:chess_app/extensions/piece.dart';
+import 'package:chess_app/extensions/chess.dart';
 
 class PawnPromotionDialog extends StatelessWidget {
   static final _pieces = List<chess.PieceType>.unmodifiable([

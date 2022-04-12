@@ -1,6 +1,6 @@
 import 'package:chess/chess.dart';
 import 'package:flutter/material.dart';
-import 'package:chess_app/extensions/piece.dart';
+import 'package:chess_app/extensions/chess.dart';
 
 class PieceImage extends StatelessWidget {
   final Piece piece;
