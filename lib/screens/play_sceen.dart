@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:chess_app/controllers/board_controller.dart';
 import 'package:chess_app/controllers/clock_controller.dart';
 import 'package:chess_app/models/DrawType.dart';
@@ -20,6 +22,7 @@ class _PlayScreenState extends State<PlayScreen> {
   BoardController? _boardController;
   Map<chess.Color, ClockController>? _clockControllerMap;
   Map<chess.Color, String>? _nameMap;
+  late StreamController<chess.Move> _moveStreamController;
 
   bool flipped = false;
 
@@ -27,11 +30,14 @@ class _PlayScreenState extends State<PlayScreen> {
   void initState() {
     super.initState();
 
+    _moveStreamController = new StreamController();
+
     this._boardController = BoardController(
       onDraw: onDrawCallback,
       onMove: onMoveCallback,
       onWin: onWinCallback,
       game: chess.Chess(),
+      moveStream: _moveStreamController.stream,
     );
 
     _clockControllerMap = {
@@ -188,7 +194,8 @@ class _PlayScreenState extends State<PlayScreen> {
                   controller: _boardController!,
                   flipped: flipped,
                   squareColors: SquareColorTheme.lichess,
-                  colorsAllowedToMove: chess.Color.BLACK | chess.Color.WHITE,
+                  colorsAllowedToMove: chess.Color.WHITE.flag,
+                  moveStreamController: _moveStreamController,
                 ),
                 PlayerClock(
                   bottomName,
@@ -207,6 +214,15 @@ class _PlayScreenState extends State<PlayScreen> {
   void onMoveCallback(chess.Move move) async {
     print('${move.fromAlgebraic} -> ${move.toAlgebraic}');
     setActiveClock(move.color.other);
+
+    if (move.color.flag.contains(chess.Color.WHITE)) {
+      final responseMove = _boardController?.getPossibleMoves().first;
+
+      Future.delayed(
+        Duration(seconds: 2),
+        () => _moveStreamController.add(responseMove!),
+      );
+    }
 
     setState(() {});
 
@@ -315,5 +331,6 @@ class _PlayScreenState extends State<PlayScreen> {
     super.dispose();
     _boardController?.dispose();
     _clockControllerMap?.values.forEach((clock) => clock.dispose());
+    _moveStreamController.close();
   }
 }

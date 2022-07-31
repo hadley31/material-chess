@@ -16,6 +16,10 @@ extension ColorFlagsExtensions on ColorFlags {
   bool contains(Color color) {
     return this & color.flag != none;
   }
+
+  bool containsFlag(ColorFlags colors) {
+    return this & colors != none;
+  }
 }
 
 extension ChessColorExtensions on Color {
@@ -28,11 +32,20 @@ extension ChessColorExtensions on Color {
   ColorFlags operator |(Color other) {
     return this.flag | other.flag;
   }
+
+  bool within(ColorFlags flags) {
+    return flags.contains(this);
+  }
 }
 
 extension ChessMoveExtensions on Move {
   Piece? get capturedPiece {
-    return captured == null ? Piece(captured!, color.other) : null;
+    return captured != null ? Piece(captured!, color.other) : null;
+  }
+
+  Move withPromotion(PieceType promotionType) {
+    return new Move(this.color, this.from, this.to, this.flags, this.piece,
+        this.captured, promotionType);
   }
 }
 

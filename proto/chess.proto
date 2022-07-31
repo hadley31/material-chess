@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+service GameService {
+    rpc Move(MoveRequest) returns (MoveResponse);
+}
+
+message MoveRequest {
+    string move = 1;
+}
+
+message MoveResponse {
+    bool status = 1;
+}

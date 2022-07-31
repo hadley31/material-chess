@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:collection/collection.dart';
 import 'package:chess/chess.dart' as chess;
 import 'package:chess_app/controllers/board_controller.dart';
@@ -23,12 +25,14 @@ class Board extends StatefulWidget {
   final bool flipped;
   final SquareColorTheme? squareColors;
   final ColorFlags colorsAllowedToMove;
+  final StreamController<chess.Move>? moveStreamController;
 
   Board({
     required this.controller,
     SquareColorTheme? squareColors,
     this.colorsAllowedToMove = ColorFlagsExtensions.none,
     this.flipped = false,
+    this.moveStreamController,
   }) : this.squareColors = squareColors ?? SquareColorTheme.lichess;
 
   @override
@@ -62,6 +66,11 @@ class _BoardState extends State<Board> {
     // Did we tap the already selected square?
     // If so, remove selection
     if (s.name == selectedSquare) return updateSelectedSquare(null);
+
+    bool canSelectSquare =
+        s.piece?.color.within(widget.colorsAllowedToMove) ?? true;
+    if (selectedSquare == null && !canSelectSquare)
+      return updateSelectedSquare(null);
 
     // Is the square NOT a possible move?
     // If so, select the square if it has a piece
@@ -99,36 +108,36 @@ class _BoardState extends State<Board> {
     final moves = controller.getMovesForSquare(selectedSquare!);
 
     // Get the move that matches our selected squares
-    final move = moves.firstWhereOrNull(
+    chess.Move? move = moves.firstWhereOrNull(
       (m) => m.fromAlgebraic == selectedSquare && m.toAlgebraic == target,
     );
 
     // No move?? This shouldn't be possible logically, but check just in case
     if (move == null) return updateSelectedSquare(null);
 
-    chess.PieceType? promotionType;
-
     // Are we promoting?
     if (move.promotion != null) {
+      // Open promotion dialog
       chess.PieceType? type = await showDialog<chess.PieceType>(
         context: context,
-        builder: (_) => PawnPromotionDialog(move.color),
+        builder: (_) => PawnPromotionDialog(move!.color),
       );
 
-      // Player cancelled the promotion, cancel move
+      // If player cancelled the promotion, cancel move
       if (type == null) return updateSelectedSquare(null);
 
-      promotionType = type;
+      move = move.withPromotion(type);
     }
 
-    // Move the piece
-    controller.move(
-      selectedSquare!,
-      target,
-      promotion: promotionType,
-    );
+    // Send move to the move stream
+    print("Pushing move...");
+    pushMove(move);
 
     updateSelectedSquare(null);
+  }
+
+  void pushMove(chess.Move move) {
+    widget.moveStreamController?.add(move);
   }
 
   @override

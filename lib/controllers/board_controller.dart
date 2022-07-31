@@ -12,6 +12,7 @@ typedef void DrawCallback(DrawType type);
 
 class BoardController extends ChangeNotifier {
   final chess.Chess game;
+  final Stream<chess.Move> moveStream;
   final WinCallback onWin;
   final MoveCallback onMove;
   final DrawCallback onDraw;
@@ -28,7 +29,17 @@ class BoardController extends ChangeNotifier {
     required this.onDraw,
     required this.onWin,
     required this.game,
-  });
+    required this.moveStream,
+  }) {
+    moveStream.listen((event) {
+      print(event.toString());
+      move(
+        event.fromAlgebraic,
+        event.toAlgebraic,
+        promotion: event.promotion,
+      );
+    });
+  }
 
   List<chess.PieceType> get whiteCapturedPieces =>
       _capturedPieces[chess.Color.WHITE]!;
@@ -121,6 +132,10 @@ class BoardController extends ChangeNotifier {
 
   List<chess.Move> getMovesForSquare(String? square) {
     return game.generate_moves({'square': square});
+  }
+
+  List<chess.Move> getPossibleMoves() {
+    return game.generate_moves();
   }
 
   bool squareIsLight(String square) {
